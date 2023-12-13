@@ -1,4 +1,4 @@
-using System;
+[using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -28,9 +28,9 @@ class Program
     public void Initialize()
     {
         NotifyIcon notifyIcon = new NotifyIcon();
-        notifyIcon.Icon = new System.Drawing.Icon("ic_block_128_28186 .ico");
+        notifyIcon.Icon = new System.Drawing.Icon("Visuals\\ic_block_128_28186 .ico");
         notifyIcon.Visible = true;
-        notifyIcon.Text = "RimonBlocked";
+        notifyIcon.Text = "RimonBlocker";
 
         ContextMenuStrip contextMenu = new ContextMenuStrip();
         contextMenu.Items.Add("Custom Paths", null, (sender, e) => SetCustomPaths());
@@ -53,7 +53,6 @@ class Program
                         BlockProcess(path);
                     }
                 }
-
                 Thread.Sleep(1000);
             }
         });
