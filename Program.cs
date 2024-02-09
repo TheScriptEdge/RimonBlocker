@@ -1,6 +1,7 @@
-[using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
@@ -30,16 +31,9 @@ class Program
         NotifyIcon notifyIcon = new NotifyIcon();
         notifyIcon.Icon = new System.Drawing.Icon("Visuals\\ic_block_128_28186 .ico");
         notifyIcon.Visible = true;
-        notifyIcon.Text = "RimonBlocker";
+        notifyIcon.Text = "RimonBlocked";
 
-        ContextMenuStrip contextMenu = new ContextMenuStrip();
-        contextMenu.Items.Add("Custom Paths", null, (sender, e) => SetCustomPaths());
-        contextMenu.Items.Add("Built-in Paths", null, (sender, e) => SetBuiltInPaths());
-        contextMenu.Items.Add("Restart Processes", null, (sender, e) => RestartProcesses());
-        contextMenu.Items.Add("Open Log", null, (sender, e) => OpenLog());
-        contextMenu.Items.Add("Close Log", null, (sender, e) => CloseLog());
-        contextMenu.Items.Add("Exit", null, (sender, e) => Application.Exit());
-
+        ContextMenuStrip contextMenu = CreateStyledContextMenu();
         notifyIcon.ContextMenuStrip = contextMenu;
 
         Thread backgroundThread = new Thread(() =>
@@ -53,11 +47,66 @@ class Program
                         BlockProcess(path);
                     }
                 }
+
                 Thread.Sleep(1000);
             }
         });
         backgroundThread.IsBackground = true;
         backgroundThread.Start();
+    }
+
+    private ContextMenuStrip CreateStyledContextMenu()
+    {
+        ContextMenuStrip contextMenu = new ContextMenuStrip();
+
+        // Create a custom renderer for the context menu
+        contextMenu.Renderer = new CustomRenderer();
+
+        // Add menu items
+        contextMenu.Items.Add(CreateStyledMenuItem("Custom Paths", (sender, e) => SetCustomPaths()));
+        contextMenu.Items.Add(CreateStyledMenuItem("Built-in Paths", (sender, e) => SetBuiltInPaths()));
+        contextMenu.Items.Add(CreateStyledMenuItem("Restart Processes", (sender, e) => RestartProcesses()));
+        contextMenu.Items.Add(CreateStyledMenuItem("Open Log", (sender, e) => OpenLog()));
+        contextMenu.Items.Add(CreateStyledMenuItem("Close Log", (sender, e) => CloseLog()));
+
+        // Add a styled credit popup
+        contextMenu.Items.Add(new ToolStripSeparator());
+        contextMenu.Items.Add(CreateStyledMenuItem("Credit", (sender, e) => ShowCreditPopup()));
+        contextMenu.Items.Add(CreateStyledMenuItem("Exit", (sender, e) => Application.Exit()));
+
+        return contextMenu;
+    }
+
+    private ToolStripMenuItem CreateStyledMenuItem(string text, EventHandler onClick)
+    {
+        ToolStripMenuItem menuItem = new ToolStripMenuItem(text);
+        menuItem.Font = new Font("Segoe UI", 12, FontStyle.Regular);
+        menuItem.ForeColor = Color.White;
+        menuItem.Click += onClick;
+        return menuItem;
+    }
+
+    private void ShowCreditPopup()
+    {
+        MessageBox.Show("Developed by TheScriptEdge (GitHub)", "Credit", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    // Custom renderer class for the context menu
+    public class CustomRenderer : ToolStripProfessionalRenderer
+    {
+        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+        {
+            if (e.Item.Enabled)
+            {
+                Rectangle rc = new Rectangle(Point.Empty, e.Item.Size);
+                e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(66, 53, 147)), rc); // Use color #42359A
+                e.Graphics.DrawRectangle(new Pen(Color.FromArgb(66, 53, 147)), 1, 0, rc.Width - 2, rc.Height - 1);
+            }
+            else
+            {
+                base.OnRenderMenuItemBackground(e);
+            }
+        }
     }
 
     private void SetCustomPaths()
@@ -99,11 +148,22 @@ class Program
 
     private void RestartProcesses()
     {
+        processPaths = new List<string>
+        {
+            "C:\\Program Files\\Netspark\\NsUpdate\\NsUpdate.exe",
+            "C:\\Program Files\\Netspark\\NsUpdate\\NsUpdateTask.exe",
+            "C:\\Program Files\\Netspark\\NsGUI\\NsGUI.exe",
+            "C:\\Users\\AppData\\Local\\Netspark\\ScreenFilter\\ScreenFilter.exe",
+            "C:\\Program Files\\Netspark\\NsUpdate\\net_c.exe",
+            "C:\\Program Files\\Netspark\\NsGUI\\graphics\\rimon\\floatingIcon.exe"
+        };
+        OpenLog();
         if (processPaths != null)
         {
             foreach (var path in processPaths)
             {
                 StartProcess(path);
+                Application.Exit();
             }
         }
     }
@@ -150,6 +210,7 @@ class Program
     {
         try
         {
+
             Process.Start(processPath);
             AppendText($"Restarted process - Path: {processPath}");
         }
@@ -197,9 +258,7 @@ class Program
         }
     }
 
-    private void LogError
-
-(string message, Exception ex)
+    private void LogError(string message, Exception ex)
     {
         AppendText($"Error: {message}\nException: {ex.Message}");
         // You can expand this to log to a file, database, or use a logging library.
